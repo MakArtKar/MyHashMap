@@ -113,7 +113,7 @@ class HashMap {
     }
 
     ValueType & operator[](KeyType const &key) {
-        insert(make_pair(key, ValueType()));
+        insert(std::make_pair(key, ValueType()));
         size_t hash_key = get_hash(key);
         for (auto it : mas[hash_key]) {
             if (it->first == key) {
