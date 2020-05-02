@@ -20,7 +20,7 @@ class HashMap {
     int Mod, Sz;
     Hash Hasher;
 
-    // Resizes LoopedContainer to Mod and fills with elements from Storage. Time: O(Mod + Sz). 
+    // Resizes LoopedContainer to Mod and fills with elements from Storage. Time: O(Mod + Sz).
     void reallocate() {
         LoopedContainer.assign(Mod, {});
         for (auto it = Storage.begin(); it != Storage.end(); it++) {
@@ -33,19 +33,19 @@ class HashMap {
     }
 
  public:
- 	// Returns iterator to the begin of Storage. Time: O(1).
+    // Returns iterator to the begin of Storage. Time: O(1).
     iterator begin() {
         return Storage.begin();
     }
- 	// Returns constant iterator to the begin of Storage. Time: O(1).
+    // Returns constant iterator to the begin of Storage. Time: O(1).
     const_iterator begin() const {
         return Storage.begin();
     }
- 	// Returns iterator to the end of Storage. Time: O(1).
+    // Returns iterator to the end of Storage. Time: O(1).
     iterator end() {
         return Storage.end();
     }
- 	// Returns constant iterator to the end of Storage. Time: O(1).
+    // Returns constant iterator to the end of Storage. Time: O(1).
     const_iterator end() const {
         return Storage.end();
     }
@@ -146,15 +146,15 @@ class HashMap {
     }
     // Time: O(1).
     size_t size() const {
-    	return Sz;
+        return Sz;
     }
     // Time: O(1).
     bool empty() const {
-    	return Sz == 0;
+        return Sz == 0;
     }
     // Time: O(1).
     Hash hash_function() const {
-    	return Hasher;
+        return Hasher;
     }
     // Returns iterator on Storage. Time: O(1).
     iterator find(KeyType const &key) {
