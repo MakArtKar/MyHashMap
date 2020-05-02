@@ -4,72 +4,79 @@
 #include <algorithm>
 #include <utility>
 
+/*
+The implementation of hash map (hash table) using closed addressing (open hashing) and rebuilding by doubling the size of container.
+*/
 template<class KeyType, class ValueType, class Hash = std::hash<KeyType> >
 class HashMap {
  public:
-    using T = std::pair <const KeyType, ValueType>;
-    using iterator = typename std::list <T>::iterator;
-    using const_iterator = typename std::list <T>::const_iterator;
+    using T = std::pair<const KeyType, ValueType>;
+    using iterator = typename std::list<T>::iterator;
+    using const_iterator = typename std::list<T>::const_iterator;
 
  private:
-    std::list <T> keys;
-    std::vector <std::vector <iterator> > mas;
-    int mod, n;
-    Hash hasher;
+    std::list<T> Storage;
+    std::vector<std::vector<iterator> > LoopedContainer;
+    int Mod, Sz;
+    Hash Hasher;
 
+    // Resizes LoopedContainer to Mod and fills with elements from Storage. Time: O(Mod + Sz). 
     void reallocate() {
-        mas.assign(mod, {});
-        for (auto it = keys.begin(); it != keys.end(); it++) {
-            mas[hasher(it->first) % mod].push_back(it);
+        LoopedContainer.assign(Mod, {});
+        for (auto it = Storage.begin(); it != Storage.end(); it++) {
+            LoopedContainer[Hasher(it->first) % Mod].push_back(it);
         }
     }
-    size_t get_hash(KeyType const &key) const {
-        return hasher(key) % mod;
+    // Returns hash of key. Time: O(Hash).
+    size_t getHash(KeyType const &key) const {
+        return Hasher(key) % Mod;
     }
 
  public:
+ 	// Returns iterator to the begin of Storage. Time: O(1).
     iterator begin() {
-        return keys.begin();
+        return Storage.begin();
     }
+ 	// Returns constant iterator to the begin of Storage. Time: O(1).
     const_iterator begin() const {
-        return keys.begin();
+        return Storage.begin();
     }
+ 	// Returns iterator to the end of Storage. Time: O(1).
     iterator end() {
-        return keys.end();
+        return Storage.end();
     }
+ 	// Returns constant iterator to the end of Storage. Time: O(1).
     const_iterator end() const {
-        return keys.end();
+        return Storage.end();
     }
+    // Inserts the element (of type std::pair<const KeyType, ValueType>) to HashMap and reallocates if need. Time: O(1).
     void insert(T const &p) {
-        size_t hash_key = get_hash(p.first);
-        for (auto it : mas[hash_key]) {
+        size_t hash_key = getHash(p.first);
+        for (const auto it : LoopedContainer[hash_key]) {
             if (it->first == p.first) {
                 return;
             }
         }
-        mas[hash_key].push_back(keys.insert(keys.end(), p));
-        if (++n >= mod) {
-            mod *= 2;
+        LoopedContainer[hash_key].push_back(Storage.insert(Storage.end(), p));
+        if (++Sz >= Mod) {
+            Mod *= 2;
             reallocate();
         }
     }
+    // Erases the element (by key) from HashMap. Time: O(1).
     void erase(KeyType const &key) {
-        size_t hash_key = get_hash(key);
-        for (auto &it : mas[hash_key]) {
+        size_t hash_key = getHash(key);
+        for (auto &it : LoopedContainer[hash_key]) {
             if (it->first == key) {
-                keys.erase(it);
-                swap(it, *prev(mas[hash_key].end()));
-                mas[hash_key].pop_back();
-                --n;
-                if (n * 4 < mod) {
-                    mod /= 2;
-                    reallocate();
-                }
+                Storage.erase(it);
+                swap(it, *prev(LoopedContainer[hash_key].end()));
+                LoopedContainer[hash_key].pop_back();
+                --Sz;
                 return;
             }
         }
     }
-
+    // Copy assignment operator. Time: O(other size).
     HashMap& operator = (HashMap const &other) {
         if (&other != this)   {
             clear();
@@ -79,85 +86,100 @@ class HashMap {
         }
         return *this;
     }
+    // Move assignment operator. Time: O(1).
     HashMap& operator = (HashMap &&other) {
-        std::swap(mas, other.mas);
-        std::swap(keys, other.keys);
-        std::swap(n, other.n);
-        std::swap(mod, other.mod);
+        std::swap(LoopedContainer, other.LoopedContainer);
+        std::swap(Storage, other.Storage);
+        std::swap(Sz, other.Sz);
+        std::swap(Mod, other.Mod);
         return *this;
     }
-
-    HashMap(Hash const &hasher = Hash()) : hasher(hasher) {
+    // Empty constructor. Time: O(1).
+    HashMap(Hash const &Hasher = Hash()) : Hasher(Hasher) {
         clear();
     }
+    // Constructs by iterators on container's borders. Time: O(last - first).
     template <typename Iterator>
-    HashMap(Iterator first, Iterator last, Hash const &hasher = Hash()) :
-    hasher(hasher) {
+    HashMap(Iterator first, Iterator last, Hash const &Hasher = Hash()) :
+    Hasher(Hasher) {
         clear();
         for (auto cur = first; cur != last; cur++) {
             insert(*cur);
         }
     }
-    HashMap(std::initializer_list <T> const &l, Hash const &hasher = Hash()) :
-    hasher(hasher) {
+    // Constructs by initializer_list. Time: O(list size).
+    HashMap(std::initializer_list <T> const &l, Hash const &Hasher = Hash()) :
+    Hasher(Hasher) {
         clear();
         for (auto &p : l) {
             insert(p);
         }
     }
+    // Removes copy assignment constructor.
     explicit HashMap(HashMap const &other) {
         *this = other;
     }
+    // Removes move assignment constructor.
     explicit HashMap(HashMap &&other) {
         *this = other;
     }
-
+    // Time: O(1).
     ValueType & operator[](KeyType const &key) {
         insert(std::make_pair(key, ValueType()));
-        size_t hash_key = get_hash(key);
-        for (auto it : mas[hash_key]) {
+        size_t hash_key = getHash(key);
+        for (auto it : LoopedContainer[hash_key]) {
             if (it->first == key) {
                 return it->second;
             }
         }
-        return keys.begin()->second;
+        return Storage.begin()->second;
     }
+    // Time: O(1).
     const ValueType& at(KeyType const &key) const {
-        size_t hash_key = get_hash(key);
-        for (auto it : mas[hash_key]) {
+        size_t hash_key = getHash(key);
+        for (auto it : LoopedContainer[hash_key]) {
             if (it->first == key) {
                 return it->second;
             }
         }
         throw std::out_of_range({"out_of_range"});
     }
-
-    size_t size() const {return n;}
-    bool empty() const {return n == 0;}
-    Hash hash_function() const {return hasher;}
-
+    // Time: O(1).
+    size_t size() const {
+    	return Sz;
+    }
+    // Time: O(1).
+    bool empty() const {
+    	return Sz == 0;
+    }
+    // Time: O(1).
+    Hash hash_function() const {
+    	return Hasher;
+    }
+    // Returns iterator on Storage. Time: O(1).
     iterator find(KeyType const &key) {
-        size_t hash_key = get_hash(key);
-        for (auto it : mas[hash_key]) {
+        size_t hash_key = getHash(key);
+        for (auto it : LoopedContainer[hash_key]) {
             if (it->first == key) {
                 return it;
             }
         }
-        return keys.end();
+        return Storage.end();
     }
+    // Returns constant iterator on Storage. Time: O(1).
     const_iterator find(KeyType const &key) const {
-        size_t hash_key = get_hash(key);
-        for (auto it : mas[hash_key]) {
+        size_t hash_key = getHash(key);
+        for (auto it : LoopedContainer[hash_key]) {
             if (it->first == key) {
                 return it;
             }
         }
-        return keys.end();
+        return Storage.end();
     }
-
+    // Time: O(1).
     void clear() {
-        n = 0, mod = 1;
-        keys.clear();
-        mas.assign(mod, {});
+        Sz = 0, Mod = 1;
+        Storage.clear();
+        LoopedContainer.assign(Mod, {});
     }
 };
